@@ -27,6 +27,7 @@
   "dependencies": {
     "@raycast/api": "file:/Applications/Raycast.app/Contents/Resources/RaycastCommands_RaycastCommands.bundle/Contents/Resources/api",
     "caniuse-api": "^3.0.0",
+    "markdown-table": "^3.0.1",
     "node-fetch": "^2.6.1"
   }
 }

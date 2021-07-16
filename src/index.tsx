@@ -1,38 +1,30 @@
-import {
-  ActionPanel,
-  CopyToClipboardAction,
-  Detail,
-  List,
-  OpenInBrowserAction,
-  render,
-  showToast,
-  ToastStyle,
-  MenuItem,
-} from "@raycast/api";
-// @ts-ignore
-import caniuse from "caniuse-api"
+import { ActionPanel, Detail, List, MenuItem, OpenInBrowserAction, render, showToast, ToastStyle } from "@raycast/api";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore Types are missing
+import caniuse from "caniuse-api";
+import { markdownTable } from "markdown-table";
 import React from "react";
 
-type CanIUseResult = Record<"y"|"n"|"a"|"x", number>
+type CanIUseResult = Record<"y" | "n" | "a" | "x", number>
 
 type CanIUseBrowser =
-"and_chr" |
-"and_ff" |
-"and_qq" |
-"and_uc" |
-"android" |
-"baidu" |
-"chrome" |
-"edge" |
-"firefox" |
-"ie" |
-"ie_mob" |
-"ios_saf" |
-"op_mini" |
-"op_mob" |
-"opera" |
-"safari" |
-"samsung"
+  "and_chr" |
+  "and_ff" |
+  "and_qq" |
+  "and_uc" |
+  "android" |
+  "baidu" |
+  "chrome" |
+  "edge" |
+  "firefox" |
+  "ie" |
+  "ie_mob" |
+  "ios_saf" |
+  "op_mini" |
+  "op_mob" |
+  "opera" |
+  "safari" |
+  "samsung"
 
 type CanIUseSupportResult = Record<CanIUseBrowser, CanIUseResult>
 
@@ -40,37 +32,37 @@ type Property = string
 
 function find(query: string): Property[] {
   try {
-    return caniuse.find(query)
+    return caniuse.find(query);
   } catch (error) {
     console.error(error);
-    showToast(ToastStyle.Failure, "test");
-    return []
+    showToast(ToastStyle.Failure, error);
+    return [];
   }
 }
 
 function getSupport(property: string): CanIUseSupportResult | undefined {
   try {
-    return caniuse.getSupport(property)
+    return caniuse.getSupport(property);
   } catch (error) {
     console.error(error);
     showToast(ToastStyle.Failure, error);
   }
 }
 
-function supportToString(support?: CanIUseSupportResult): string {
+function supportToMarkdownTable(support?: CanIUseSupportResult): string {
   if (!support) {
-    return ""
+    return "";
   }
-  return Object.entries(support).map((([browser, table]) => `${browser}: >=${table.y}`)).join(', ')
+  // return Object.entries(support).map((([browser, table]) => `${browser}: >=${table.y}`)).join(', ')
+  return markdownTable([["Browser", "Version"], ...Object.entries(support).map((([browser, table]) => [browser, String(table.y)]))]);
 }
 
-function SelectPropertyAction({property}: { property: Property}) {
-  const context = React.useContext(SharedContext)
+function SelectPropertyAction({ property }: { property: Property }) {
+  const context = React.useContext(SharedContext);
   return (
     <MenuItem
       id="getSupport"
       title="Check browser support"
-      // icon={Icon.Pencil}
       onAction={() => context.setSelectedProperty(property)}
     />
   );
@@ -78,45 +70,50 @@ function SelectPropertyAction({property}: { property: Property}) {
 
 function ListItem(props: { property: Property }) {
   const { property } = props;
-  const support = supportToString(getSupport(property))
+  // const support = supportToMarkdownTable(getSupport(property))
   return (
     <List.Item
       id={property}
       title={property}
-      subtitle={support}
-      // icon="list-icon.png"
-      accessoryTitle={new Date().toLocaleDateString()}
     >
       <ActionPanel>
-        <SelectPropertyAction property={property}/>
+        <SelectPropertyAction property={property} />
         <OpenInBrowserAction url={`https://caniuse.com/${property}`} />
       </ActionPanel>
     </List.Item>
   );
 }
 
-const SharedContext = React.createContext({
+const SharedContext = React.createContext<{
+  selectedProperty: string | null
+  setSelectedProperty: React.Dispatch<React.SetStateAction<string | null>>
+}>({
   selectedProperty: null,
-  setSelectedProperty: (property: Property) => {}
-})
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  setSelectedProperty: () => {
+  }
+});
 
 function Extension() {
-  const [selectedProperty, setSelectedProperty] = React.useState<string|null>(null)
-  const [query, setQuery] = React.useState("")
+  const [selectedProperty, setSelectedProperty] = React.useState<string | null>(null);
+  const [query, setQuery] = React.useState("");
   const properties = find(query);
-  console.log(selectedProperty);
+
+  /* Emulate router / navigation */
   if (selectedProperty) {
-    return <Detail markdown={"test"}/>
+    return <Detail markdown={`# ${selectedProperty}
+${supportToMarkdownTable(getSupport(selectedProperty))}
+`} />;
   }
-  return <SharedContext.Provider value={{selectedProperty, setSelectedProperty}}>
-    <List searchBarPlaceholder="Find CSS properties..." onSearchTextChange={(value)=>{
-    setQuery(value)
-  }}>
-    {properties.map((property) => (
-      <ListItem key={property} property={property} />
-    ))}
-  </List>
-  </SharedContext.Provider>
+  return <SharedContext.Provider value={{ selectedProperty, setSelectedProperty }}>
+    <List searchBarPlaceholder="Find CSS properties..." onSearchTextChange={(value) => {
+      setQuery(value);
+    }}>
+      {properties.map((property) => (
+        <ListItem key={property} property={property} />
+      ))}
+    </List>
+  </SharedContext.Provider>;
 }
 
-render(<Extension/>);
+render(<Extension />);
